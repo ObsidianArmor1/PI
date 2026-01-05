@@ -32,7 +32,8 @@
             border-radius: 14px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
             width: 95%;
-            max-width: 1000px;
+            /* Increased width to fit content without scrolling */
+            max-width: 1100px;
             text-align: center;
             border: 1px solid var(--mid-grey);
         }
@@ -58,6 +59,8 @@
             margin-bottom: 20px;
             height: 200px; 
             overflow-y: auto;
+            /* Force hide horizontal scrollbar */
+            overflow-x: hidden;
             border: 1px solid rgba(255, 255, 255, 0.1);
             scrollbar-width: thin;
             scrollbar-color: var(--steel-blue) transparent;
@@ -65,38 +68,36 @@
             justify-content: center;
         }
 
-        /* The container for all rows */
         #pi-rows-container {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            /* Padding left to make room for the "3." prefix */
+            /* Padding left creates the "lane" for the 3. prefix */
             padding-left: 90px;
         }
 
-        /* A single row of digits (holds 3 groups) */
         .pi-row {
             display: flex;
             align-items: center;
-            margin-bottom: 10px;
-            position: relative; /* Needed for absolute positioning the prefix on row 1 */
+            /* Increased spacing between rows */
+            margin-bottom: 15px;
+            position: relative; 
         }
 
-        /* A group of 6 digits */
         .pi-group {
             display: flex;
             gap: 10px;
-            margin-right: 30px; /* Space between groups */
+            margin-right: 30px; 
         }
-        /* Remove margin from the last group in a row */
+        
         .pi-group:last-child {
             margin-right: 0;
         }
 
-        /* The "3." prefix - Absolutely positioned relative to the FIRST row */
+        /* The "3." prefix - locked to the left of the first row */
         .prefix {
             position: absolute;
-            left: -90px; /* Pull it back into the padding area */
+            left: -90px; 
             top: 0;
             display: flex;
             gap: 10px;
@@ -250,11 +251,9 @@
     let currentIndex = 0;
     let gameOver = false;
     
-    // Track current DOM elements to append to
     let currentRow = null;
     let currentGroup = null;
 
-    // Sound logic
     function playWrongSound() {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
@@ -275,7 +274,6 @@
         const row = document.createElement('div');
         row.className = 'pi-row';
         
-        // If it's the first row, add the "3." prefix
         if (isFirstRow) {
             const prefix = document.createElement('div');
             prefix.className = 'prefix';
@@ -288,7 +286,7 @@
     }
 
     function createNewGroup() {
-        if (!currentRow) createNewRow(true); // Safety check
+        if (!currentRow) createNewRow(true); 
         const group = document.createElement('div');
         group.className = 'pi-group';
         currentRow.appendChild(group);
@@ -298,9 +296,6 @@
     function handleInput(num) {
         if (gameOver) return;
 
-        // Determine if we need a new Row or Group BEFORE appending
-        // We do this by checking the currentIndex
-        
         // New Row needed every 18 digits (0, 18, 36...)
         if (currentIndex > 0 && currentIndex % 18 === 0) {
             createNewRow(false);
@@ -346,19 +341,13 @@
         currentRow = null;
         currentGroup = null;
         document.getElementById('score').textContent = '0';
-        document.getElementById('pi-rows-container').innerHTML = ''; // Clear all rows
+        document.getElementById('pi-rows-container').innerHTML = ''; 
         document.getElementById('game-over-modal').style.display = 'none';
         
-        // Initialize the first row for the user to start typing
-        // Note: The logic inside handleInput will create the row/group on the first input (index 0)
-        // But the 3. needs to be visible immediately. So we create the first row now.
+        // Initialize first row so 3. appears immediately
         createNewRow(true);
-        // We don't create the group yet; handleInput will do that when typing starts.
-        // Wait, if we don't create the group, the prefix appears but 3. stays there.
-        // Actually handleInput checks (index === 0) to create a group. That works.
     }
     
-    // Init game
     resetGame();
 </script>
 </body>

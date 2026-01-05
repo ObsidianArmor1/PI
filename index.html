@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi Memory Challenge - 1010 Digit Stream Edition</title>
+    <title>Pi Memory Challenge - Stream Edition</title>
     <style>
         :root {
             --deep-charcoal: #121212;
@@ -32,25 +32,31 @@
             border-radius: 14px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
             width: 95%;
-            /* Widened slightly more to guarantee no horizontal scroll */
             max-width: 1050px; 
             text-align: center;
             border: 1px solid var(--mid-grey);
         }
 
-        .score-badge {
+        .header-area {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 1.5rem;
+        }
+
+        .badge {
             background: var(--deep-charcoal);
-            color: var(--gold);
-            padding: 8px 30px;
+            padding: 8px 25px;
             border-radius: 25px;
             font-weight: 800;
-            font-size: 1.2rem;
-            display: inline-block;
-            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
             border: 2px solid var(--gold);
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
         }
+
+        .score-badge { color: var(--gold); }
+        .best-badge { color: var(--text-light); border-color: var(--mid-grey); }
 
         .pi-viewport {
             background: rgba(0, 0, 0, 0.4);
@@ -59,7 +65,6 @@
             margin-bottom: 25px;
             height: 220px; 
             overflow-y: auto;
-            /* Hard fix for the horizontal scrollbar */
             overflow-x: hidden; 
             border: 1px solid rgba(255, 255, 255, 0.1);
             scrollbar-width: thin;
@@ -72,13 +77,12 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            padding-left: 95px; /* Lane for the 3. prefix */
+            padding-left: 95px; 
         }
 
         .pi-row {
             display: flex;
             align-items: center;
-            /* Added 'tiny bit' of extra vertical space */
             margin-bottom: 18px; 
             position: relative; 
         }
@@ -86,7 +90,7 @@
         .pi-group {
             display: flex;
             gap: 10px;
-            margin-right: 35px; /* Spacing between blocks of 6 */
+            margin-right: 35px; 
         }
         
         .pi-group:last-child {
@@ -197,7 +201,10 @@
 <body>
 
 <div class="container">
-    <div class="score-badge">SCORE: <span id="score">0</span> / 1010</div>
+    <div class="header-area">
+        <div class="badge score-badge">Score: <span id="score">0</span> / 1010</div>
+        <div class="badge best-badge">Best: <span id="best">0</span></div>
+    </div>
     
     <div class="pi-viewport" id="viewport">
         <div id="pi-rows-container">
@@ -220,7 +227,7 @@
 
 <div class="modal" id="game-over-modal">
     <div class="modal-content">
-        <h2 style="color: var(--gold); font-size: 2.5rem; margin-top: 0;">CHALLENGE OVER</h2>
+        <h2 id="modal-title" style="color: var(--gold); font-size: 2.5rem; margin-top: 0;">CHALLENGE OVER</h2>
         <p style="font-size: 1.4rem;">Digits Memorized:</p>
         <span id="final-score" style="font-size: 5rem; font-weight: 900; color: white; display: block;">0</span>
         <button class="btn-restart" onclick="resetGame()">RETRY CHALLENGE</button>
@@ -228,7 +235,6 @@
 </div>
 
 <script>
-    // Spigot algorithm to generate exactly 1010 digits (+ extra buffer)
     function generatePi(n) {
         let digits = "";
         let q = 1n, r = 0n, t = 1n, k = 1n, n_ = 3n, l = 3n;
@@ -247,8 +253,9 @@
         return digits.substring(1); 
     }
 
-    const PI_DIGITS = generatePi(1100);
+    const PI_DIGITS = generatePi(1200);
     let currentIndex = 0;
+    let sessionBest = 0;
     let gameOver = false;
     let currentRow = null;
     let currentGroup = null;
@@ -307,23 +314,36 @@
             document.getElementById('score').textContent = currentIndex;
             viewport.scrollTop = viewport.scrollHeight;
             
-            // Winning Condition
             if (currentIndex === 1010) {
-                gameOver = true;
-                document.getElementById('final-score').textContent = "1010 (MAX!)";
-                document.getElementById('game-over-modal').style.display = 'flex';
+                endGame(true);
             }
         } else {
-            gameOver = true;
+            endGame(false, num);
+        }
+    }
+
+    function endGame(won, numInput) {
+        gameOver = true;
+        if (!won) {
             playWrongSound();
             const span = document.createElement('span');
             span.className = 'digit wrong';
-            span.textContent = num;
+            span.textContent = numInput;
             currentGroup.appendChild(span);
-            document.getElementById('final-score').textContent = currentIndex;
-            document.getElementById('game-over-modal').style.display = 'flex';
-            viewport.scrollTop = viewport.scrollHeight;
+            document.getElementById('modal-title').textContent = "CHALLENGE OVER";
+        } else {
+            document.getElementById('modal-title').textContent = "CHALLENGE COMPLETE!";
         }
+
+        // Update Session Best
+        if (currentIndex > sessionBest) {
+            sessionBest = currentIndex;
+            document.getElementById('best').textContent = sessionBest;
+        }
+
+        document.getElementById('final-score').textContent = currentIndex + (won ? " (MAX!)" : "");
+        document.getElementById('game-over-modal').style.display = 'flex';
+        document.getElementById('viewport').scrollTop = document.getElementById('viewport').scrollHeight;
     }
 
     document.addEventListener('keydown', (e) => {

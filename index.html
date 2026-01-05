@@ -19,11 +19,33 @@
             background-color: var(--deep-charcoal);
             color: var(--text-light);
             display: flex;
+            flex-direction: column; /* Allow progress bar to sit above */
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
             overflow: hidden;
+        }
+
+        /* Progress Bar Above the Container */
+        .progress-wrapper {
+            width: 95%;
+            max-width: 1050px;
+            height: 12px;
+            background: var(--deep-charcoal);
+            border: 1px solid var(--mid-grey);
+            border-radius: 6px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--gold);
+            box-shadow: 0 0 15px var(--gold);
+            transition: width 0.3s ease;
         }
 
         .container {
@@ -91,11 +113,20 @@
             display: flex;
             gap: 10px;
             margin-right: 35px; 
+            padding: 4px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent; /* Placeholder for highlight */
         }
         
-        .pi-group:last-child {
-            margin-right: 0;
+        /* Highlight for the current "chunk" */
+        .pi-group.active-chunk {
+            border-color: var(--gold);
+            background: rgba(255, 215, 0, 0.05);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
         }
+
+        .pi-group:last-child { margin-right: 0; }
 
         .prefix {
             position: absolute;
@@ -122,10 +153,7 @@
             box-shadow: 0 3px 0 rgba(0,0,0,0.2);
         }
 
-        .digit.decimal {
-            background: var(--mid-grey);
-            color: var(--deep-charcoal);
-        }
+        .digit.decimal { background: var(--mid-grey); color: var(--deep-charcoal); }
 
         .digit.wrong {
             background: #d32f2f;
@@ -179,15 +207,9 @@
         }
 
         .btn-restart {
-            background: var(--gold);
-            color: var(--deep-charcoal);
-            border: none;
-            padding: 15px 40px;
-            border-radius: 8px;
-            font-weight: 900;
-            font-size: 1.4rem;
-            cursor: pointer;
-            margin-top: 25px;
+            background: var(--gold); color: var(--deep-charcoal); border: none;
+            padding: 15px 40px; border-radius: 8px; font-weight: 900; font-size: 1.4rem;
+            cursor: pointer; margin-top: 25px;
         }
 
         @keyframes shake {
@@ -200,6 +222,10 @@
 </head>
 <body>
 
+<div class="progress-wrapper">
+    <div class="progress-fill" id="progress-bar"></div>
+</div>
+
 <div class="container">
     <div class="header-area">
         <div class="badge score-badge">Score: <span id="score">0</span> / 1010</div>
@@ -207,8 +233,7 @@
     </div>
     
     <div class="pi-viewport" id="viewport">
-        <div id="pi-rows-container">
-            </div>
+        <div id="pi-rows-container"></div>
     </div>
 
     <div class="numpad">
@@ -254,6 +279,7 @@
     }
 
     const PI_DIGITS = generatePi(1200);
+    const TARGET = 1010;
     let currentIndex = 0;
     let sessionBest = 0;
     let gameOver = false;
@@ -291,8 +317,12 @@
 
     function createNewGroup() {
         if (!currentRow) createNewRow(true); 
+        
+        // Remove active class from previous group
+        if (currentGroup) currentGroup.classList.remove('active-chunk');
+        
         const group = document.createElement('div');
-        group.className = 'pi-group';
+        group.className = 'pi-group active-chunk';
         currentRow.appendChild(group);
         currentGroup = group;
     }
@@ -303,20 +333,22 @@
         if (currentIndex > 0 && currentIndex % 18 === 0) createNewRow(false);
         if (currentIndex === 0 || currentIndex % 6 === 0) createNewGroup();
 
-        const viewport = document.getElementById('viewport');
-
         if (num === PI_DIGITS[currentIndex]) {
             const span = document.createElement('span');
             span.className = 'digit';
             span.textContent = num;
             currentGroup.appendChild(span);
+            
             currentIndex++;
             document.getElementById('score').textContent = currentIndex;
-            viewport.scrollTop = viewport.scrollHeight;
             
-            if (currentIndex === 1010) {
-                endGame(true);
-            }
+            // Update Progress Bar
+            const progressPercent = (currentIndex / TARGET) * 100;
+            document.getElementById('progress-bar').style.width = Math.min(progressPercent, 100) + '%';
+            
+            document.getElementById('viewport').scrollTop = document.getElementById('viewport').scrollHeight;
+            
+            if (currentIndex === TARGET) endGame(true);
         } else {
             endGame(false, num);
         }
@@ -335,7 +367,6 @@
             document.getElementById('modal-title').textContent = "CHALLENGE COMPLETE!";
         }
 
-        // Update Session Best
         if (currentIndex > sessionBest) {
             sessionBest = currentIndex;
             document.getElementById('best').textContent = sessionBest;
@@ -343,7 +374,6 @@
 
         document.getElementById('final-score').textContent = currentIndex + (won ? " (MAX!)" : "");
         document.getElementById('game-over-modal').style.display = 'flex';
-        document.getElementById('viewport').scrollTop = document.getElementById('viewport').scrollHeight;
     }
 
     document.addEventListener('keydown', (e) => {
@@ -356,6 +386,7 @@
         currentRow = null;
         currentGroup = null;
         document.getElementById('score').textContent = '0';
+        document.getElementById('progress-bar').style.width = '0%';
         document.getElementById('pi-rows-container').innerHTML = ''; 
         document.getElementById('game-over-modal').style.display = 'none';
         createNewRow(true);

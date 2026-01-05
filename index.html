@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Memory Challenge</title>
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --bg: #f8fafc;
+            --text: #1e293b;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text);
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+        .score-badge {
+            background: #ede9fe;
+            color: var(--primary);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+        .input-area {
+            font-size: 1.5rem;
+            margin: 20px 0;
+            min-height: 40px;
+            letter-spacing: 2px;
+        }
+        .digit-display {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+        .digit {
+            width: 30px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .digit.decimal { background: #e2e8f0; color: var(--text); }
+        .digit.wrong { background: #ef4444; }
+        
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 2rem;
+        }
+        button {
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover { background: #f1f5f9; }
+        button:active { transform: scale(0.95); }
+
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 80%;
+        }
+        .btn-restart {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="score-badge">Score: <span id="score">0</span></div>
+    
+    <div class="input-area" id="pi-flow">
+        <span class="digit decimal">3</span>
+        <span class="digit decimal">.</span>
+        </div>
+
+    <p id="status-text">Type the next digit of Pi...</p>
+
+    <div class="numpad">
+        <button onclick="handleInput('1')">1</button>
+        <button onclick="handleInput('2')">2</button>
+        <button onclick="handleInput('3')">3</button>
+        <button onclick="handleInput('4')">4</button>
+        <button onclick="handleInput('5')">5</button>
+        <button onclick="handleInput('6')">6</button>
+        <button onclick="handleInput('7')">7</button>
+        <button onclick="handleInput('8')">8</button>
+        <button onclick="handleInput('9')">9</button>
+        <button onclick="handleInput('0')">0</button>
+    </div>
+</div>
+
+<div class="modal" id="game-over-modal">
+    <div class="modal-content">
+        <h2 style="color: var(--primary)">Game Over!</h2>
+        <p>You memorized <strong id="final-score">0</strong> digits.</p>
+        <button class="btn-restart" onclick="resetGame()">Try Again</button>
+    </div>
+</div>
+
+<script>
+    // Generate Pi to 1500 decimal places using a Spigot algorithm
+    function generatePi(n) {
+        let digits = "";
+        let q = 1n, r = 0n, t = 1n, k = 1n, n_ = 3n, l = 3n;
+        while (digits.length < n) {
+            if (4n * q + r - t < n_ * t) {
+                digits += n_.toString();
+                let nr = 10n * (r - n_ * t);
+                n_ = ((10n * (3n * q + r)) / t) - 10n * n_;
+                q *= 10n;
+                r = nr;
+            } else {
+                let nr = (2n * q + r) * l;
+                let nn = (q * (7n * k + 2n) + r * l) / (t * l);
+                q *= k;
+                t *= l;
+                l += 2n;
+                k += 1n;
+                n_ = nn;
+                r = nr;
+            }
+        }
+        return digits.substring(1); // Remove the '3' at the start
+    }
+
+    const PI_DIGITS = generatePi(1505);
+    let currentIndex = 0;
+    let gameOver = false;
+
+    // Web Audio API Sound Generator
+    function playWrongSound() {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); 
+        oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
+
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.3);
+    }
+
+    function handleInput(num) {
+        if (gameOver) return;
+
+        if (num === PI_DIGITS[currentIndex]) {
+            // Correct
+            const span = document.createElement('span');
+            span.className = 'digit';
+            span.textContent = num;
+            document.getElementById('pi-flow').appendChild(span);
+            
+            currentIndex++;
+            document.getElementById('score').textContent = currentIndex;
+            document.getElementById('status-text').textContent = `${currentIndex} digits memorized so far!`;
+        } else {
+            // Wrong
+            gameOver = true;
+            playWrongSound();
+            
+            const span = document.createElement('span');
+            span.className = 'digit wrong';
+            span.textContent = num;
+            document.getElementById('pi-flow').appendChild(span);
+            
+            document.getElementById('final-score').textContent = currentIndex;
+            document.getElementById('game-over-modal').style.display = 'flex';
+        }
+    }
+
+    // Allow keyboard input
+    document.addEventListener('keydown', (e) => {
+        if (e.key >= '0' && e.key <= '9') {
+            handleInput(e.key);
+        }
+    });
+
+    function resetGame() {
+        currentIndex = 0;
+        gameOver = false;
+        document.getElementById('score').textContent = '0';
+        document.getElementById('pi-flow').innerHTML = '<span class="digit decimal">3</span><span class="digit decimal">.</span>';
+        document.getElementById('game-over-modal').style.display = 'none';
+        document.getElementById('status-text').textContent = 'Type the next digit of Pi...';
+    }
+</script>
+
+</body>
+</html>

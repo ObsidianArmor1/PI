@@ -32,7 +32,8 @@
             border-radius: 12px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             width: 90%;
-            max-width: 700px;
+            /* CHANGED: Increased max-width to make the box bigger */
+            max-width: 1000px;
             text-align: center;
             border: 1px solid var(--mid-grey);
         }
@@ -54,11 +55,14 @@
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
-            height: 160px; /* Limits height to roughly 3-4 lines */
+            height: 160px; /* Limits height to roughly 3 lines */
             overflow-y: auto;
             border: 1px solid rgba(255, 255, 255, 0.05);
             scrollbar-width: thin;
             scrollbar-color: var(--mid-grey) transparent;
+            /* CHANGED: Center the content within the viewport */
+            display: flex;
+            justify-content: center;
         }
 
         #pi-flow {
@@ -67,6 +71,8 @@
             flex-wrap: wrap;
             justify-content: flex-start; /* Align start for natural reading */
             gap: 4px;
+            /* CHANGED: Set a fixed width to force 3 groups per line */
+            width: 675px; 
         }
 
         .digit {
@@ -102,6 +108,8 @@
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 10px;
+            max-width: 600px; /* Limit numpad width */
+            margin: 0 auto; /* Center numpad */
         }
 
         button {
@@ -236,7 +244,6 @@
             span.className = 'digit';
             
             // Add space every 6 digits
-            // (currentIndex + 1) because the first digit of Pi (1) is index 0
             if ((currentIndex + 1) % 6 === 0) {
                 span.classList.add('group-separator');
             }
@@ -247,7 +254,7 @@
             currentIndex++;
             document.getElementById('score').textContent = currentIndex;
 
-            // Auto-scroll to bottom so the newest digit is always visible
+            // Auto-scroll to bottom
             viewport.scrollTop = viewport.scrollHeight;
         } else {
             gameOver = true;

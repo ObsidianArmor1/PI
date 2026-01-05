@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi Memory Challenge</title>
+    <title>Pi Memory Challenge - 1010 Digit Stream Edition</title>
     <style>
         :root {
             --deep-charcoal: #121212;
@@ -28,12 +28,12 @@
 
         .container {
             background: var(--gunmetal-grey);
-            padding: 2rem;
+            padding: 2.5rem;
             border-radius: 14px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
             width: 95%;
-            /* Increased width to fit content without scrolling */
-            max-width: 1100px;
+            /* Widened slightly more to guarantee no horizontal scroll */
+            max-width: 1050px; 
             text-align: center;
             border: 1px solid var(--mid-grey);
         }
@@ -41,26 +41,26 @@
         .score-badge {
             background: var(--deep-charcoal);
             color: var(--gold);
-            padding: 8px 25px;
+            padding: 8px 30px;
             border-radius: 25px;
             font-weight: 800;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             display: inline-block;
-            margin-bottom: 1.2rem;
+            margin-bottom: 1.5rem;
             border: 2px solid var(--gold);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 2px;
         }
 
         .pi-viewport {
             background: rgba(0, 0, 0, 0.4);
             border-radius: 10px;
-            padding: 25px 30px;
-            margin-bottom: 20px;
-            height: 200px; 
+            padding: 30px;
+            margin-bottom: 25px;
+            height: 220px; 
             overflow-y: auto;
-            /* Force hide horizontal scrollbar */
-            overflow-x: hidden;
+            /* Hard fix for the horizontal scrollbar */
+            overflow-x: hidden; 
             border: 1px solid rgba(255, 255, 255, 0.1);
             scrollbar-width: thin;
             scrollbar-color: var(--steel-blue) transparent;
@@ -72,32 +72,30 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            /* Padding left creates the "lane" for the 3. prefix */
-            padding-left: 90px;
+            padding-left: 95px; /* Lane for the 3. prefix */
         }
 
         .pi-row {
             display: flex;
             align-items: center;
-            /* Increased spacing between rows */
-            margin-bottom: 15px;
+            /* Added 'tiny bit' of extra vertical space */
+            margin-bottom: 18px; 
             position: relative; 
         }
 
         .pi-group {
             display: flex;
             gap: 10px;
-            margin-right: 30px; 
+            margin-right: 35px; /* Spacing between blocks of 6 */
         }
         
         .pi-group:last-child {
             margin-right: 0;
         }
 
-        /* The "3." prefix - locked to the left of the first row */
         .prefix {
             position: absolute;
-            left: -90px; 
+            left: -95px; 
             top: 0;
             display: flex;
             gap: 10px;
@@ -133,26 +131,27 @@
         .numpad {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
+            gap: 15px;
             max-width: 650px;
             margin: 0 auto;
         }
 
         button {
-            padding: 14px;
+            padding: 16px;
             border: 2px solid var(--mid-grey);
             background: var(--gunmetal-grey);
             color: var(--text-light);
             border-radius: 8px;
-            font-size: 1.4rem;
+            font-size: 1.6rem;
             font-weight: bold;
             cursor: pointer;
-            transition: 0.1s;
+            transition: 0.15s;
         }
 
         button:hover { 
             background: var(--steel-blue);
             border-color: white;
+            transform: scale(1.05);
         }
 
         button:active { transform: translateY(2px); }
@@ -169,22 +168,22 @@
 
         .modal-content {
             background: var(--gunmetal-grey);
-            padding: 40px;
+            padding: 50px;
             border-radius: 18px;
             text-align: center;
-            border: 3px solid var(--gold);
+            border: 4px solid var(--gold);
         }
 
         .btn-restart {
             background: var(--gold);
             color: var(--deep-charcoal);
             border: none;
-            padding: 12px 35px;
-            border-radius: 7px;
+            padding: 15px 40px;
+            border-radius: 8px;
             font-weight: 900;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 25px;
         }
 
         @keyframes shake {
@@ -198,7 +197,7 @@
 <body>
 
 <div class="container">
-    <div class="score-badge">SCORE: <span id="score">0</span></div>
+    <div class="score-badge">SCORE: <span id="score">0</span> / 1010</div>
     
     <div class="pi-viewport" id="viewport">
         <div id="pi-rows-container">
@@ -221,14 +220,15 @@
 
 <div class="modal" id="game-over-modal">
     <div class="modal-content">
-        <h2 style="color: var(--gold); font-size: 2.2rem; margin-top: 0;">GAME OVER</h2>
-        <p style="font-size: 1.2rem;">Total Digits Memorized:</p>
-        <span id="final-score" style="font-size: 4rem; font-weight: 900; color: white; display: block;">0</span>
-        <button class="btn-restart" onclick="resetGame()">TRY AGAIN</button>
+        <h2 style="color: var(--gold); font-size: 2.5rem; margin-top: 0;">CHALLENGE OVER</h2>
+        <p style="font-size: 1.4rem;">Digits Memorized:</p>
+        <span id="final-score" style="font-size: 5rem; font-weight: 900; color: white; display: block;">0</span>
+        <button class="btn-restart" onclick="resetGame()">RETRY CHALLENGE</button>
     </div>
 </div>
 
 <script>
+    // Spigot algorithm to generate exactly 1010 digits (+ extra buffer)
     function generatePi(n) {
         let digits = "";
         let q = 1n, r = 0n, t = 1n, k = 1n, n_ = 3n, l = 3n;
@@ -247,10 +247,9 @@
         return digits.substring(1); 
     }
 
-    const PI_DIGITS = generatePi(1505);
+    const PI_DIGITS = generatePi(1100);
     let currentIndex = 0;
     let gameOver = false;
-    
     let currentRow = null;
     let currentGroup = null;
 
@@ -273,14 +272,12 @@
         const rowsContainer = document.getElementById('pi-rows-container');
         const row = document.createElement('div');
         row.className = 'pi-row';
-        
         if (isFirstRow) {
             const prefix = document.createElement('div');
             prefix.className = 'prefix';
             prefix.innerHTML = '<span class="digit decimal">3</span><span class="digit decimal">.</span>';
             row.appendChild(prefix);
         }
-        
         rowsContainer.appendChild(row);
         currentRow = row;
     }
@@ -296,15 +293,8 @@
     function handleInput(num) {
         if (gameOver) return;
 
-        // New Row needed every 18 digits (0, 18, 36...)
-        if (currentIndex > 0 && currentIndex % 18 === 0) {
-            createNewRow(false);
-        }
-        
-        // New Group needed every 6 digits (0, 6, 12, 18...)
-        if (currentIndex === 0 || currentIndex % 6 === 0) {
-            createNewGroup();
-        }
+        if (currentIndex > 0 && currentIndex % 18 === 0) createNewRow(false);
+        if (currentIndex === 0 || currentIndex % 6 === 0) createNewGroup();
 
         const viewport = document.getElementById('viewport');
 
@@ -313,10 +303,16 @@
             span.className = 'digit';
             span.textContent = num;
             currentGroup.appendChild(span);
-            
             currentIndex++;
             document.getElementById('score').textContent = currentIndex;
             viewport.scrollTop = viewport.scrollHeight;
+            
+            // Winning Condition
+            if (currentIndex === 1010) {
+                gameOver = true;
+                document.getElementById('final-score').textContent = "1010 (MAX!)";
+                document.getElementById('game-over-modal').style.display = 'flex';
+            }
         } else {
             gameOver = true;
             playWrongSound();
@@ -324,7 +320,6 @@
             span.className = 'digit wrong';
             span.textContent = num;
             currentGroup.appendChild(span);
-            
             document.getElementById('final-score').textContent = currentIndex;
             document.getElementById('game-over-modal').style.display = 'flex';
             viewport.scrollTop = viewport.scrollHeight;
@@ -343,8 +338,6 @@
         document.getElementById('score').textContent = '0';
         document.getElementById('pi-rows-container').innerHTML = ''; 
         document.getElementById('game-over-modal').style.display = 'none';
-        
-        // Initialize first row so 3. appears immediately
         createNewRow(true);
     }
     

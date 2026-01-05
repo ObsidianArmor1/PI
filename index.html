@@ -32,7 +32,7 @@
             border-radius: 14px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.6);
             width: 95%;
-            max-width: 950px;
+            max-width: 1000px;
             text-align: center;
             border: 1px solid var(--mid-grey);
         }
@@ -54,9 +54,9 @@
         .pi-viewport {
             background: rgba(0, 0, 0, 0.4);
             border-radius: 10px;
-            padding: 25px 20px;
+            padding: 25px 30px;
             margin-bottom: 20px;
-            height: 200px; /* Locked to ~3 lines height */
+            height: 200px; 
             overflow-y: auto;
             border: 1px solid rgba(255, 255, 255, 0.1);
             scrollbar-width: thin;
@@ -70,22 +70,17 @@
             flex-direction: row;
             flex-wrap: wrap;
             justify-content: flex-start;
-            position: relative;
-            /* Precise width for 3 groups of 6 digits + gaps + separators */
-            /* (18 digits * 36px) + (15 gaps * 7px) + (2 separators * 16px) = 785px */
-            width: 785px; 
-            /* Padding on left for the "3." so it doesn't shift the grid */
-            padding-left: 95px;
-            row-gap: 8px; /* Reduced vertical space between lines */
+            /* width for 18 digits + prefix space + gaps */
+            width: 885px; 
+            row-gap: 8px; /* Kept vertical spacing exactly as requested */
+            column-gap: 11px; /* Increased horizontal gap to prevent merging */
         }
 
-        /* Fixed "3." on the far left of the first line */
-        .prefix {
-            position: absolute;
-            left: 0;
-            top: 0;
-            display: flex;
-            gap: 7px;
+        /* Spacer to keep columns aligned below the "3." */
+        .row-spacer {
+            width: 83px; /* Matches width of '3' + gap + '.' */
+            height: 46px;
+            flex-shrink: 0;
         }
 
         .digit {
@@ -103,9 +98,9 @@
             box-shadow: 0 3px 0 rgba(0,0,0,0.2);
         }
 
-        /* Gap after every 6th digit */
+        /* Group separator for blocks of 6 */
         .group-separator {
-            margin-right: 16px; 
+            margin-right: 20px; 
         }
 
         .digit.decimal {
@@ -135,15 +130,13 @@
             font-size: 1.4rem;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.1s, background 0.2s;
+            transition: 0.1s;
         }
 
         button:hover { 
             background: var(--steel-blue);
             border-color: white;
         }
-        
-        button:active { transform: translateY(2px); }
 
         .modal {
             position: fixed;
@@ -190,10 +183,8 @@
     
     <div class="pi-viewport" id="viewport">
         <div id="pi-flow">
-            <div class="prefix">
-                <span class="digit decimal">3</span>
-                <span class="digit decimal">.</span>
-            </div>
+            <span class="digit decimal">3</span>
+            <span class="digit decimal" style="margin-right: 11px;">.</span>
             </div>
     </div>
 
@@ -265,13 +256,19 @@
         const viewport = document.getElementById('viewport');
 
         if (num === PI_DIGITS[currentIndex]) {
+            // Logic for a new line: Add a spacer every 18 digits to skip the '3.' column
+            if (currentIndex > 0 && currentIndex % 18 === 0) {
+                const spacer = document.createElement('div');
+                spacer.className = 'row-spacer';
+                container.appendChild(spacer);
+            }
+
             const span = document.createElement('span');
             span.className = 'digit';
             
-            // Add margin after digit 6, 12, 24, 30, etc. (every 6th digit)
-            // But NOT if it's the end of a line (18, 36, etc.) to prevent layout shifts
-            let digitCount = currentIndex + 1;
-            if (digitCount % 6 === 0 && digitCount % 18 !== 0) {
+            // Add separator gap after every 6th digit, but NOT if it's the end of a line (18)
+            let currentLinePos = (currentIndex % 18) + 1;
+            if (currentLinePos % 6 === 0 && currentLinePos !== 18) {
                 span.classList.add('group-separator');
             }
             
@@ -302,10 +299,8 @@
         gameOver = false;
         document.getElementById('score').textContent = '0';
         document.getElementById('pi-flow').innerHTML = `
-            <div class="prefix">
-                <span class="digit decimal">3</span>
-                <span class="digit decimal">.</span>
-            </div>
+            <span class="digit decimal">3</span>
+            <span class="digit decimal" style="margin-right: 11px;">.</span>
         `;
         document.getElementById('game-over-modal').style.display = 'none';
     }

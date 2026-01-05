@@ -67,20 +67,32 @@
 
         #pi-flow {
             display: flex;
-            flex-direction: row;
             flex-wrap: wrap;
             justify-content: flex-start;
-            /* width for 18 digits + prefix space + gaps */
-            width: 885px; 
-            row-gap: 8px; /* Kept vertical spacing exactly as requested */
-            column-gap: 11px; /* Increased horizontal gap to prevent merging */
+            align-content: flex-start;
+            position: relative;
+            /* No fixed width needed anymore, breaks are forced manually */
+            width: fit-content; 
+            /* Push everything right to make room for "3." */
+            padding-left: 90px; 
+            row-gap: 10px;
+            column-gap: 10px; 
         }
 
-        /* Spacer to keep columns aligned below the "3." */
-        .row-spacer {
-            width: 83px; /* Matches width of '3' + gap + '.' */
-            height: 46px;
-            flex-shrink: 0;
+        /* Absolutely position the 3. so it doesn't mess up the grid flow */
+        .prefix {
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* This div forces the flex container to wrap to a new line */
+        .line-break {
+            width: 100%;
+            height: 0;
+            margin: 0;
         }
 
         .digit {
@@ -98,9 +110,9 @@
             box-shadow: 0 3px 0 rgba(0,0,0,0.2);
         }
 
-        /* Group separator for blocks of 6 */
+        /* Extra spacing after every 6th digit */
         .group-separator {
-            margin-right: 20px; 
+            margin-right: 25px; 
         }
 
         .digit.decimal {
@@ -137,6 +149,8 @@
             background: var(--steel-blue);
             border-color: white;
         }
+
+        button:active { transform: translateY(2px); }
 
         .modal {
             position: fixed;
@@ -183,8 +197,10 @@
     
     <div class="pi-viewport" id="viewport">
         <div id="pi-flow">
-            <span class="digit decimal">3</span>
-            <span class="digit decimal" style="margin-right: 11px;">.</span>
+            <div class="prefix">
+                <span class="digit decimal">3</span>
+                <span class="digit decimal">.</span>
+            </div>
             </div>
     </div>
 
@@ -256,19 +272,20 @@
         const viewport = document.getElementById('viewport');
 
         if (num === PI_DIGITS[currentIndex]) {
-            // Logic for a new line: Add a spacer every 18 digits to skip the '3.' column
+            // Force a line break if we just finished a row of 18 (and aren't at the start)
             if (currentIndex > 0 && currentIndex % 18 === 0) {
-                const spacer = document.createElement('div');
-                spacer.className = 'row-spacer';
-                container.appendChild(spacer);
+                const breakLine = document.createElement('div');
+                breakLine.className = 'line-break';
+                container.appendChild(breakLine);
             }
 
             const span = document.createElement('span');
             span.className = 'digit';
             
-            // Add separator gap after every 6th digit, but NOT if it's the end of a line (18)
-            let currentLinePos = (currentIndex % 18) + 1;
-            if (currentLinePos % 6 === 0 && currentLinePos !== 18) {
+            // Add extra margin for groups of 6 (but not at end of line)
+            // (currentIndex + 1) % 18 !== 0 checks if it's NOT the last item in a row
+            let posInRow = (currentIndex % 18) + 1;
+            if (posInRow % 6 === 0 && posInRow !== 18) {
                 span.classList.add('group-separator');
             }
             
@@ -299,8 +316,10 @@
         gameOver = false;
         document.getElementById('score').textContent = '0';
         document.getElementById('pi-flow').innerHTML = `
-            <span class="digit decimal">3</span>
-            <span class="digit decimal" style="margin-right: 11px;">.</span>
+            <div class="prefix">
+                <span class="digit decimal">3</span>
+                <span class="digit decimal">.</span>
+            </div>
         `;
         document.getElementById('game-over-modal').style.display = 'none';
     }

@@ -6,7 +6,6 @@
     <title>Pi Memory Challenge</title>
     <style>
         :root {
-            /* Your Color Scheme */
             --deep-charcoal: #121212;
             --gunmetal-grey: #2a2e35;
             --steel-blue: #4682b4;
@@ -16,7 +15,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--deep-charcoal);
             color: var(--text-light);
             display: flex;
@@ -24,15 +23,16 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            overflow: hidden; /* Prevent body scroll */
         }
 
         .container {
             background: var(--gunmetal-grey);
-            padding: 2.5rem;
+            padding: 2rem;
             border-radius: 12px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             width: 90%;
-            max-width: 800px;
+            max-width: 700px;
             text-align: center;
             border: 1px solid var(--mid-grey);
         }
@@ -44,27 +44,34 @@
             border-radius: 25px;
             font-weight: bold;
             display: inline-block;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             border: 1px solid var(--gold);
         }
 
-        /* Fix for the vertical alignment */
+        /* Fixed viewport for 3-4 lines of digits */
+        .pi-viewport {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 160px; /* Limits height to roughly 3-4 lines */
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            scrollbar-width: thin;
+            scrollbar-color: var(--mid-grey) transparent;
+        }
+
         #pi-flow {
             display: flex;
-            flex-direction: row; /* Force horizontal */
-            flex-wrap: wrap;    /* Allow to move to next line if full */
-            justify-content: center;
-            gap: 6px;
-            min-height: 50px;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 8px;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: flex-start; /* Align start for natural reading */
+            gap: 4px;
         }
 
         .digit {
-            width: 32px;
-            height: 38px;
+            width: 28px;
+            height: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -73,6 +80,12 @@
             border-radius: 4px;
             font-weight: bold;
             font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        /* The 6-digit separator */
+        .group-separator {
+            margin-right: 12px; /* Small space (roughly half a digit width) */
         }
 
         .digit.decimal {
@@ -81,15 +94,14 @@
         }
 
         .digit.wrong {
-            background: #b22222; /* Critical Alert */
+            background: #b22222;
             animation: shake 0.2s;
         }
 
         .numpad {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
-            margin-top: 2rem;
+            gap: 10px;
         }
 
         button {
@@ -100,13 +112,10 @@
             border-radius: 6px;
             font-size: 1.2rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: 0.2s;
         }
 
-        button:hover {
-            background: var(--steel-blue);
-            border-color: var(--text-light);
-        }
+        button:hover { background: var(--steel-blue); }
 
         .modal {
             position: fixed;
@@ -124,7 +133,6 @@
             border-radius: 15px;
             text-align: center;
             border: 2px solid var(--gold);
-            color: white;
         }
 
         .btn-restart {
@@ -133,16 +141,15 @@
             border: none;
             padding: 12px 30px;
             border-radius: 6px;
-            margin-top: 20px;
             font-weight: bold;
             cursor: pointer;
+            margin-top: 15px;
         }
 
         @keyframes shake {
-            0% { transform: translateX(0); }
+            0%, 100% { transform: translateX(0); }
             25% { transform: translateX(5px); }
-            50% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
+            75% { transform: translateX(-5px); }
         }
     </style>
 </head>
@@ -151,12 +158,12 @@
 <div class="container">
     <div class="score-badge">Score: <span id="score">0</span></div>
     
-    <div id="pi-flow">
-        <span class="digit decimal">3</span>
-        <span class="digit decimal">.</span>
+    <div class="pi-viewport" id="viewport">
+        <div id="pi-flow">
+            <span class="digit decimal">3</span>
+            <span class="digit decimal group-separator">.</span>
+            </div>
     </div>
-
-    <p style="color: var(--mid-grey)" id="status-text">Enter the next digit...</p>
 
     <div class="numpad">
         <button onclick="handleInput('1')">1</button>
@@ -175,13 +182,12 @@
 <div class="modal" id="game-over-modal">
     <div class="modal-content">
         <h2 style="color: var(--gold)">GAME OVER</h2>
-        <p>Digits Memorized: <span id="final-score" style="font-size: 2rem; display: block; margin: 10px 0;">0</span></p>
+        <p>Digits Memorized: <span id="final-score" style="font-size: 2.5rem; display: block; color: white;">0</span></p>
         <button class="btn-restart" onclick="resetGame()">TRY AGAIN</button>
     </div>
 </div>
 
 <script>
-    // Logic to calculate Pi to 1500 digits
     function generatePi(n) {
         let digits = "";
         let q = 1n, r = 0n, t = 1n, k = 1n, n_ = 3n, l = 3n;
@@ -190,17 +196,11 @@
                 digits += n_.toString();
                 let nr = 10n * (r - n_ * t);
                 n_ = ((10n * (3n * q + r)) / t) - 10n * n_;
-                q *= 10n;
-                r = nr;
+                q *= 10n; r = nr;
             } else {
                 let nr = (2n * q + r) * l;
                 let nn = (q * (7n * k + 2n) + r * l) / (t * l);
-                q *= k;
-                t *= l;
-                l += 2n;
-                k += 1n;
-                n_ = nn;
-                r = nr;
+                q *= k; t *= l; l += 2n; k += 1n; n_ = nn; r = nr;
             }
         }
         return digits.substring(1); 
@@ -215,9 +215,9 @@
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(120, audioCtx.currentTime); 
+        osc.frequency.setValueAtTime(110, audioCtx.currentTime); 
         osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.4);
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
         gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -228,22 +228,37 @@
     function handleInput(num) {
         if (gameOver) return;
 
+        const container = document.getElementById('pi-flow');
+        const viewport = document.getElementById('viewport');
+
         if (num === PI_DIGITS[currentIndex]) {
             const span = document.createElement('span');
             span.className = 'digit';
+            
+            // Add space every 6 digits
+            // (currentIndex + 1) because the first digit of Pi (1) is index 0
+            if ((currentIndex + 1) % 6 === 0) {
+                span.classList.add('group-separator');
+            }
+            
             span.textContent = num;
-            document.getElementById('pi-flow').appendChild(span);
+            container.appendChild(span);
+            
             currentIndex++;
             document.getElementById('score').textContent = currentIndex;
+
+            // Auto-scroll to bottom so the newest digit is always visible
+            viewport.scrollTop = viewport.scrollHeight;
         } else {
             gameOver = true;
             playWrongSound();
             const span = document.createElement('span');
             span.className = 'digit wrong';
             span.textContent = num;
-            document.getElementById('pi-flow').appendChild(span);
+            container.appendChild(span);
             document.getElementById('final-score').textContent = currentIndex;
             document.getElementById('game-over-modal').style.display = 'flex';
+            viewport.scrollTop = viewport.scrollHeight;
         }
     }
 
@@ -255,7 +270,7 @@
         currentIndex = 0;
         gameOver = false;
         document.getElementById('score').textContent = '0';
-        document.getElementById('pi-flow').innerHTML = '<span class="digit decimal">3</span><span class="digit decimal">.</span>';
+        document.getElementById('pi-flow').innerHTML = '<span class="digit decimal">3</span><span class="digit decimal group-separator">.</span>';
         document.getElementById('game-over-modal').style.display = 'none';
     }
 </script>

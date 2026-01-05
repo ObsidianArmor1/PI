@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi Memory Challenge</title>
+    <title>Pi Memory Challenge - Large Scale</title>
     <style>
         :root {
             --deep-charcoal: #121212;
@@ -23,17 +23,16 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            overflow: hidden; /* Prevent body scroll */
+            overflow: hidden;
         }
 
         .container {
             background: var(--gunmetal-grey);
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            width: 90%;
-            /* CHANGED: Increased max-width to make the box bigger */
-            max-width: 1000px;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            width: 95%;
+            max-width: 1100px;
             text-align: center;
             border: 1px solid var(--mid-grey);
         }
@@ -41,26 +40,28 @@
         .score-badge {
             background: var(--deep-charcoal);
             color: var(--gold);
-            padding: 8px 20px;
-            border-radius: 25px;
-            font-weight: bold;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 1.4rem;
             display: inline-block;
-            margin-bottom: 1rem;
-            border: 1px solid var(--gold);
+            margin-bottom: 2rem;
+            border: 2px solid var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
-        /* Fixed viewport for 3-4 lines of digits */
+        /* Taller Viewport for 3 Large Lines */
         .pi-viewport {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            height: 160px; /* Limits height to roughly 3 lines */
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            height: 280px; /* Increased height for larger digits */
             overflow-y: auto;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             scrollbar-width: thin;
-            scrollbar-color: var(--mid-grey) transparent;
-            /* CHANGED: Center the content within the viewport */
+            scrollbar-color: var(--steel-blue) transparent;
             display: flex;
             justify-content: center;
         }
@@ -69,29 +70,30 @@
             display: flex;
             flex-direction: row;
             flex-wrap: wrap;
-            justify-content: flex-start; /* Align start for natural reading */
-            gap: 4px;
-            /* CHANGED: Set a fixed width to force 3 groups per line */
-            width: 675px; 
+            justify-content: flex-start;
+            gap: 8px;
+            /* width is set to fit 3 groups of 6 large digits + separators */
+            width: 860px; 
         }
 
+        /* Scaled Up Digits */
         .digit {
-            width: 28px;
-            height: 34px;
+            width: 42px;
+            height: 54px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: var(--steel-blue);
             color: white;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 1.1rem;
+            border-radius: 6px;
+            font-weight: 900;
+            font-size: 1.8rem; /* Large font size */
             flex-shrink: 0;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
         }
 
-        /* The 6-digit separator */
         .group-separator {
-            margin-right: 12px; /* Small space (roughly half a digit width) */
+            margin-right: 20px; /* Larger separator for larger digits */
         }
 
         .digit.decimal {
@@ -100,35 +102,43 @@
         }
 
         .digit.wrong {
-            background: #b22222;
-            animation: shake 0.2s;
+            background: #d32f2f;
+            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
         }
 
         .numpad {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            max-width: 600px; /* Limit numpad width */
-            margin: 0 auto; /* Center numpad */
+            gap: 15px;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         button {
-            padding: 15px;
-            border: 1px solid var(--mid-grey);
+            padding: 20px;
+            border: 2px solid var(--mid-grey);
             background: var(--gunmetal-grey);
             color: var(--text-light);
-            border-radius: 6px;
-            font-size: 1.2rem;
+            border-radius: 10px;
+            font-size: 1.8rem;
+            font-weight: bold;
             cursor: pointer;
-            transition: 0.2s;
+            transition: transform 0.1s, background 0.2s;
         }
 
-        button:hover { background: var(--steel-blue); }
+        button:hover { 
+            background: var(--steel-blue);
+            border-color: white;
+        }
+        
+        button:active {
+            transform: translateY(3px);
+        }
 
         .modal {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.9);
             display: none;
             justify-content: center;
             align-items: center;
@@ -137,27 +147,29 @@
 
         .modal-content {
             background: var(--gunmetal-grey);
-            padding: 40px;
-            border-radius: 15px;
+            padding: 60px;
+            border-radius: 20px;
             text-align: center;
-            border: 2px solid var(--gold);
+            border: 3px solid var(--gold);
         }
 
         .btn-restart {
             background: var(--gold);
             color: var(--deep-charcoal);
             border: none;
-            padding: 12px 30px;
-            border-radius: 6px;
-            font-weight: bold;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-weight: 900;
+            font-size: 1.5rem;
             cursor: pointer;
-            margin-top: 15px;
+            margin-top: 25px;
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
         }
     </style>
 </head>
@@ -170,7 +182,7 @@
         <div id="pi-flow">
             <span class="digit decimal">3</span>
             <span class="digit decimal group-separator">.</span>
-            </div>
+        </div>
     </div>
 
     <div class="numpad">
@@ -189,8 +201,9 @@
 
 <div class="modal" id="game-over-modal">
     <div class="modal-content">
-        <h2 style="color: var(--gold)">GAME OVER</h2>
-        <p>Digits Memorized: <span id="final-score" style="font-size: 2.5rem; display: block; color: white;">0</span></p>
+        <h2 style="color: var(--gold); font-size: 3rem; margin-top: 0;">GAME OVER</h2>
+        <p style="font-size: 1.5rem;">Total Digits Memorized:</p>
+        <span id="final-score" style="font-size: 5rem; font-weight: 900; color: white; display: block;">0</span>
         <button class="btn-restart" onclick="resetGame()">TRY AGAIN</button>
     </div>
 </div>
@@ -225,7 +238,7 @@
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(110, audioCtx.currentTime); 
         osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.4);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
         gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -242,19 +255,11 @@
         if (num === PI_DIGITS[currentIndex]) {
             const span = document.createElement('span');
             span.className = 'digit';
-            
-            // Add space every 6 digits
-            if ((currentIndex + 1) % 6 === 0) {
-                span.classList.add('group-separator');
-            }
-            
+            if ((currentIndex + 1) % 6 === 0) span.classList.add('group-separator');
             span.textContent = num;
             container.appendChild(span);
-            
             currentIndex++;
             document.getElementById('score').textContent = currentIndex;
-
-            // Auto-scroll to bottom
             viewport.scrollTop = viewport.scrollHeight;
         } else {
             gameOver = true;

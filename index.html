@@ -92,26 +92,24 @@
             scrollbar-width: thin;
             scrollbar-color: var(--steel-blue) transparent;
             display: flex;
-            justify-content: center; /* Centers the content */
+            justify-content: center; /* Horizontally center content */
         }
 
         #pi-rows-container {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
-            padding-left: 20px;
-            /* FIX 1: Use fit-content so it centers in the viewport */
-            width: fit-content; 
-            /* FIX 2: Min-width ensures it doesn't "pop" to a new size when line 2 appears */
-            min-width: 780px; 
+            align-items: center; /* Center rows vertically in the stack */
+            width: 100%;
         }
 
         .pi-row {
             display: flex;
             align-items: center;
+            justify-content: center; /* Center content within the row */
             margin-bottom: 18px; 
             position: relative;
             min-height: 46px; 
+            width: 100%; /* Ensure row spans width to allow centering */
         }
 
         .pi-group {
@@ -121,11 +119,15 @@
             padding: 4px;
             border-radius: 8px;
             transition: all 0.3s ease;
-            border: 2px solid transparent;
-            /* FIX 3: Min-height prevents the "tiny circle" issue. 
-               It now looks like an empty slot waiting for input. */
-            min-height: 46px; 
-            box-sizing: content-box; /* Ensures padding doesn't shrink height */
+            border: 2px solid transparent; 
+            min-height: 46px; /* Prevent collapse */
+        }
+        
+        /* Hides the highlight if the group has no numbers yet */
+        .pi-group:empty {
+            border-color: transparent !important;
+            background: transparent !important;
+            box-shadow: none !important;
         }
         
         .pi-group.active-chunk {
@@ -133,6 +135,8 @@
             background: rgba(255, 215, 0, 0.05);
             box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
         }
+
+        .pi-group:last-child { margin-right: 0; }
 
         .row-prefix {
             display: flex;
@@ -142,8 +146,6 @@
             font-weight: 900;
             color: var(--mid-grey);
             font-size: 1.5rem;
-            /* FIX 4: Ensure prefix aligns with the digits */
-            height: 46px; 
         }
 
         .digit {
@@ -378,20 +380,29 @@
     function handleInput(num) {
         if (gameOver) return;
 
+        // --- LAYOUT LOGIC ---
+        // First row creation happens in resetGame.
+        // We handle transitions here.
+
+        // Line 1 -> Line 2 Transition
         if (currentIndex === 10) {
             createNewRow(false);
             createNewGroup();
         }
+        // Subsequent lines
         else if (currentIndex > 10) {
             const relIndex = currentIndex - 10;
+            // Break every 18 digits relative to line 2 start
             if (relIndex > 0 && relIndex % 18 === 0) {
                 createNewRow(false);
             }
+            // New group every 6 digits relative to line 2 start
             if (relIndex > 0 && relIndex % 6 === 0) {
                 createNewGroup();
             }
         }
 
+        // --- GAMEPLAY ---
         const viewport = document.getElementById('viewport');
 
         if (num === PI_DIGITS[currentIndex]) {
@@ -461,11 +472,11 @@
         document.getElementById('pi-rows-container').innerHTML = ''; 
         document.getElementById('game-over-modal').style.display = 'none';
         
+        // Init first line immediately
         createNewRow(true); 
-        createNewGroup();   
+        createNewGroup(); 
     }
     
-    // DEBUG COMMAND
     window.debugWin = function() {
         if(gameOver) resetGame();
         let i = currentIndex;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi Memory Challenge - Stream Edition</title>
+    <title>Pi Memory Stream - Offset Mode</title>
     <style>
         :root {
             --deep-charcoal: #121212;
@@ -19,7 +19,7 @@
             background-color: var(--deep-charcoal);
             color: var(--text-light);
             display: flex;
-            flex-direction: column; /* Allow progress bar to sit above */
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -27,7 +27,7 @@
             overflow: hidden;
         }
 
-        /* Progress Bar Above the Container */
+        /* Progress Bar Above */
         .progress-wrapper {
             width: 95%;
             max-width: 1050px;
@@ -45,7 +45,7 @@
             width: 0%;
             background: var(--gold);
             box-shadow: 0 0 15px var(--gold);
-            transition: width 0.3s ease;
+            transition: width 0.2s ease;
         }
 
         .container {
@@ -85,7 +85,7 @@
             border-radius: 10px;
             padding: 30px;
             margin-bottom: 25px;
-            height: 220px; 
+            height: 250px; /* Taller to see the header row */
             overflow-y: auto;
             overflow-x: hidden; 
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -99,14 +99,21 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            padding-left: 95px; 
+            padding-left: 20px; /* Standard padding */
         }
 
         .pi-row {
             display: flex;
             align-items: center;
             margin-bottom: 18px; 
-            position: relative; 
+        }
+
+        /* The Static Header Row */
+        .pi-row.static-header {
+            opacity: 0.5;
+            border-bottom: 1px dashed rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
         }
 
         .pi-group {
@@ -116,7 +123,7 @@
             padding: 4px;
             border-radius: 8px;
             transition: all 0.3s ease;
-            border: 2px solid transparent; /* Placeholder for highlight */
+            border: 2px solid transparent; 
         }
         
         /* Highlight for the current "chunk" */
@@ -127,16 +134,6 @@
         }
 
         .pi-group:last-child { margin-right: 0; }
-
-        .prefix {
-            position: absolute;
-            left: -95px; 
-            top: 0;
-            display: flex;
-            gap: 10px;
-            height: 100%;
-            align-items: center;
-        }
 
         .digit {
             width: 36px;
@@ -153,7 +150,13 @@
             box-shadow: 0 3px 0 rgba(0,0,0,0.2);
         }
 
-        .digit.decimal { background: var(--mid-grey); color: var(--deep-charcoal); }
+        .digit.static {
+            background: var(--mid-grey);
+            color: var(--deep-charcoal);
+            box-shadow: none;
+        }
+
+        .digit.decimal { background: transparent; color: var(--text-light); width: 10px; box-shadow: none; font-size: 2rem;}
 
         .digit.wrong {
             background: #d32f2f;
@@ -233,7 +236,8 @@
     </div>
     
     <div class="pi-viewport" id="viewport">
-        <div id="pi-rows-container"></div>
+        <div id="pi-rows-container">
+            </div>
     </div>
 
     <div class="numpad">
@@ -263,7 +267,8 @@
     function generatePi(n) {
         let digits = "";
         let q = 1n, r = 0n, t = 1n, k = 1n, n_ = 3n, l = 3n;
-        while (digits.length < n) {
+        // Generate extra buffer to accommodate offset
+        while (digits.length < n + 20) {
             if (4n * q + r - t < n_ * t) {
                 digits += n_.toString();
                 let nr = 10n * (r - n_ * t);
@@ -275,17 +280,30 @@
                 q *= k; t *= l; l += 2n; k += 1n; n_ = nn; r = nr;
             }
         }
-        return digits.substring(1); 
+        
+        // Remove '3' (index 0)
+        // Offset 10 digits '1415926535' (indices 1-10)
+        // Start slice at 11
+        const cleanPi = digits.substring(11, 11 + n);
+        
+        // Log verification
+        console.log("Starting digits:", cleanPi.substring(0, 6)); // Should be 897932
+        console.log("Final 3 digits:", cleanPi.substring(n-3, n)); 
+        
+        return cleanPi;
     }
 
-    const PI_DIGITS = generatePi(1200);
+    // Generate 1010 digits past the offset
     const TARGET = 1010;
+    const PI_DIGITS = generatePi(TARGET);
+    
     let currentIndex = 0;
     let sessionBest = 0;
     let gameOver = false;
     let currentRow = null;
     let currentGroup = null;
 
+    // --- AUDIO ---
     function playWrongSound() {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
@@ -301,24 +319,50 @@
         osc.stop(audioCtx.currentTime + 0.4);
     }
 
-    function createNewRow(isFirstRow = false) {
+    // --- DOM LOGIC ---
+
+    function createStaticHeader() {
+        const container = document.getElementById('pi-rows-container');
+        const row = document.createElement('div');
+        row.className = 'pi-row static-header';
+        
+        // 3.
+        row.innerHTML = `
+            <div class="pi-group">
+                <span class="digit static">3</span>
+                <span class="digit decimal">.</span>
+            </div>
+            <div class="pi-group">
+                <span class="digit static">1</span>
+                <span class="digit static">4</span>
+                <span class="digit static">1</span>
+                <span class="digit static">5</span>
+                <span class="digit static">9</span>
+                <span class="digit static">2</span>
+            </div>
+            <div class="pi-group">
+                <span class="digit static">6</span>
+                <span class="digit static">5</span>
+                <span class="digit static">3</span>
+                <span class="digit static">5</span>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    function createNewRow() {
         const rowsContainer = document.getElementById('pi-rows-container');
         const row = document.createElement('div');
         row.className = 'pi-row';
-        if (isFirstRow) {
-            const prefix = document.createElement('div');
-            prefix.className = 'prefix';
-            prefix.innerHTML = '<span class="digit decimal">3</span><span class="digit decimal">.</span>';
-            row.appendChild(prefix);
-        }
         rowsContainer.appendChild(row);
         currentRow = row;
     }
 
     function createNewGroup() {
-        if (!currentRow) createNewRow(true); 
+        // If no row exists, make one
+        if (!currentRow) createNewRow();
         
-        // Remove active class from previous group
+        // Unhighlight old group
         if (currentGroup) currentGroup.classList.remove('active-chunk');
         
         const group = document.createElement('div');
@@ -330,8 +374,19 @@
     function handleInput(num) {
         if (gameOver) return;
 
-        if (currentIndex > 0 && currentIndex % 18 === 0) createNewRow(false);
-        if (currentIndex === 0 || currentIndex % 6 === 0) createNewGroup();
+        // Logic for creating rows/groups
+        // We start immediately at index 0 (which is digit 8)
+        // Group every 6. Row every 18.
+        
+        if (currentIndex % 18 === 0) {
+            createNewRow();
+        }
+        
+        if (currentIndex % 6 === 0) {
+            createNewGroup();
+        }
+
+        const viewport = document.getElementById('viewport');
 
         if (num === PI_DIGITS[currentIndex]) {
             const span = document.createElement('span');
@@ -342,11 +397,12 @@
             currentIndex++;
             document.getElementById('score').textContent = currentIndex;
             
-            // Update Progress Bar
+            // Progress Bar
             const progressPercent = (currentIndex / TARGET) * 100;
             document.getElementById('progress-bar').style.width = Math.min(progressPercent, 100) + '%';
             
-            document.getElementById('viewport').scrollTop = document.getElementById('viewport').scrollHeight;
+            // Auto Scroll
+            viewport.scrollTop = viewport.scrollHeight;
             
             if (currentIndex === TARGET) endGame(true);
         } else {
@@ -385,13 +441,28 @@
         gameOver = false;
         currentRow = null;
         currentGroup = null;
+        
         document.getElementById('score').textContent = '0';
         document.getElementById('progress-bar').style.width = '0%';
-        document.getElementById('pi-rows-container').innerHTML = ''; 
         document.getElementById('game-over-modal').style.display = 'none';
-        createNewRow(true);
+        
+        const container = document.getElementById('pi-rows-container');
+        container.innerHTML = ''; 
+        
+        // 1. Add the static 3.14... row
+        createStaticHeader();
+        
+        // 2. The first input will automatically create the next row via handleInput logic?
+        // No, handleInput checks (index % 18 === 0). 
+        // 0 % 18 is 0. So it will create a row immediately on the first click?
+        // Wait, handleInput runs *when user types*. 
+        // We want the cursor (highlight box) to appear *before* they type.
+        // So we must manually init the first typing row/group.
+        createNewRow();
+        createNewGroup();
     }
     
+    // Init
     resetGame();
 </script>
 </body>

@@ -92,24 +92,30 @@
             scrollbar-width: thin;
             scrollbar-color: var(--steel-blue) transparent;
             display: flex;
-            justify-content: center; /* Horizontally center content */
+            justify-content: center;
         }
 
         #pi-rows-container {
             display: flex;
             flex-direction: column;
-            align-items: center; /* Center rows vertically in the stack */
+            align-items: flex-start;
+            padding-left: 20px;
             width: 100%;
         }
 
         .pi-row {
             display: flex;
             align-items: center;
-            justify-content: center; /* Center content within the row */
             margin-bottom: 18px; 
             position: relative;
             min-height: 46px; 
-            width: 100%; /* Ensure row spans width to allow centering */
+            width: 100%; /* Rows take full width */
+        }
+
+        /* Specific style for centering ONLY the first row */
+        .pi-row.centered-row {
+            justify-content: center;
+            margin-left: -10px; /* Slight optical correction for the prefix width */
         }
 
         .pi-group {
@@ -120,14 +126,8 @@
             border-radius: 8px;
             transition: all 0.3s ease;
             border: 2px solid transparent; 
-            min-height: 46px; /* Prevent collapse */
-        }
-        
-        /* Hides the highlight if the group has no numbers yet */
-        .pi-group:empty {
-            border-color: transparent !important;
-            background: transparent !important;
-            box-shadow: none !important;
+            min-height: 46px; /* Prevents collapsing into a "dot" when empty */
+            box-sizing: content-box; /* Ensure border doesn't eat into height */
         }
         
         .pi-group.active-chunk {
@@ -135,8 +135,6 @@
             background: rgba(255, 215, 0, 0.05);
             box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
         }
-
-        .pi-group:last-child { margin-right: 0; }
 
         .row-prefix {
             display: flex;
@@ -356,6 +354,7 @@
         row.className = 'pi-row';
         
         if (isFirstRow) {
+            row.classList.add('centered-row'); // Center only the first row
             const prefix = document.createElement('div');
             prefix.className = 'row-prefix';
             prefix.innerHTML = '<span class="digit decimal">3</span><span class="digit decimal">.</span>';
@@ -381,28 +380,19 @@
         if (gameOver) return;
 
         // --- LAYOUT LOGIC ---
-        // First row creation happens in resetGame.
-        // We handle transitions here.
-
-        // Line 1 -> Line 2 Transition
         if (currentIndex === 10) {
             createNewRow(false);
             createNewGroup();
-        }
-        // Subsequent lines
-        else if (currentIndex > 10) {
+        } else if (currentIndex > 10) {
             const relIndex = currentIndex - 10;
-            // Break every 18 digits relative to line 2 start
             if (relIndex > 0 && relIndex % 18 === 0) {
                 createNewRow(false);
             }
-            // New group every 6 digits relative to line 2 start
             if (relIndex > 0 && relIndex % 6 === 0) {
                 createNewGroup();
             }
         }
 
-        // --- GAMEPLAY ---
         const viewport = document.getElementById('viewport');
 
         if (num === PI_DIGITS[currentIndex]) {
@@ -472,11 +462,12 @@
         document.getElementById('pi-rows-container').innerHTML = ''; 
         document.getElementById('game-over-modal').style.display = 'none';
         
-        // Init first line immediately
+        // Initialize Layout Immediately
         createNewRow(true); 
-        createNewGroup(); 
+        createNewGroup();
     }
     
+    // DEBUG COMMAND
     window.debugWin = function() {
         if(gameOver) resetGame();
         let i = currentIndex;

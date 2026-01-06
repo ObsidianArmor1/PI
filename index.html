@@ -99,7 +99,8 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            padding-left: 20px;
+            /* Removed left padding to allow true centering */
+            padding-left: 0; 
             width: 100%;
         }
 
@@ -109,13 +110,16 @@
             margin-bottom: 18px; 
             position: relative;
             min-height: 46px; 
-            width: 100%; /* Rows take full width */
+            width: 100%;
+            /* Default alignment for normal rows: stick to left with some margin */
+            padding-left: 20px; 
+            box-sizing: border-box;
         }
 
         /* Specific style for centering ONLY the first row */
         .pi-row.centered-row {
             justify-content: center;
-            margin-left: -10px; /* Slight optical correction for the prefix width */
+            padding-left: 0; /* Remove padding for true center */
         }
 
         .pi-group {
@@ -126,8 +130,8 @@
             border-radius: 8px;
             transition: all 0.3s ease;
             border: 2px solid transparent; 
-            min-height: 46px; /* Prevents collapsing into a "dot" when empty */
-            box-sizing: content-box; /* Ensure border doesn't eat into height */
+            min-height: 46px;
+            box-sizing: content-box; 
         }
         
         .pi-group.active-chunk {
@@ -135,6 +139,15 @@
             background: rgba(255, 215, 0, 0.05);
             box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
         }
+
+        /* FIX: Hide the yellow blob if the group has no digits yet */
+        .pi-group.active-chunk:empty {
+            border-color: transparent;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .pi-group:last-child { margin-right: 0; }
 
         .row-prefix {
             display: flex;
@@ -273,7 +286,7 @@
         <span id="final-score" style="font-size: 5rem; font-weight: 900; color: white; display: block;">0</span>
         
         <button class="btn-restart" onclick="resetGame()">RETRY CHALLENGE</button>
-        <button id="btn-mistake" class="btn-review" onclick="closeModal()">SEE MISTAKE</button>
+        <button id="btn-view" class="btn-review" onclick="closeModal()">VIEW BOARD</button>
     </div>
 </div>
 
@@ -299,6 +312,7 @@
     const PI_DIGITS = generatePi(1200);
     const TARGET = 1010;
     
+    // DEBUG LOG
     console.log(`Target: ${TARGET}`);
     console.log(`End Sequence (1007-1010): ...${PI_DIGITS.substring(1007, 1010)}`);
     console.log("Console Command available: debugWin()");
@@ -425,11 +439,9 @@
             currentGroup.appendChild(span);
             document.getElementById('modal-title').textContent = "CHALLENGE OVER";
             document.getElementById('modal-title').style.color = "#d32f2f";
-            document.getElementById('btn-mistake').style.display = 'inline-block';
         } else {
             document.getElementById('modal-title').textContent = "1010 DIGITS!";
             document.getElementById('modal-title').style.color = "var(--gold)";
-            document.getElementById('btn-mistake').style.display = 'none';
             fireConfetti();
         }
 

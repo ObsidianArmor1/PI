@@ -92,7 +92,7 @@
             scrollbar-width: thin;
             scrollbar-color: var(--steel-blue) transparent;
             display: flex;
-            justify-content: center;
+            justify-content: center; /* Centers the content */
         }
 
         #pi-rows-container {
@@ -100,7 +100,10 @@
             flex-direction: column;
             align-items: flex-start;
             padding-left: 20px;
-            width: 100%; /* Ensure it takes full width immediately */
+            /* FIX 1: Use fit-content so it centers in the viewport */
+            width: fit-content; 
+            /* FIX 2: Min-width ensures it doesn't "pop" to a new size when line 2 appears */
+            min-width: 780px; 
         }
 
         .pi-row {
@@ -108,7 +111,7 @@
             align-items: center;
             margin-bottom: 18px; 
             position: relative;
-            min-height: 46px; /* Reserve height so layout doesn't jump */
+            min-height: 46px; 
         }
 
         .pi-group {
@@ -118,7 +121,11 @@
             padding: 4px;
             border-radius: 8px;
             transition: all 0.3s ease;
-            border: 2px solid transparent; 
+            border: 2px solid transparent;
+            /* FIX 3: Min-height prevents the "tiny circle" issue. 
+               It now looks like an empty slot waiting for input. */
+            min-height: 46px; 
+            box-sizing: content-box; /* Ensures padding doesn't shrink height */
         }
         
         .pi-group.active-chunk {
@@ -135,6 +142,8 @@
             font-weight: 900;
             color: var(--mid-grey);
             font-size: 1.5rem;
+            /* FIX 4: Ensure prefix aligns with the digits */
+            height: 46px; 
         }
 
         .digit {
@@ -290,7 +299,6 @@
     const PI_DIGITS = generatePi(1200);
     const TARGET = 1010;
     
-    // DEBUG LOG
     console.log(`Target: ${TARGET}`);
     console.log(`End Sequence (1007-1010): ...${PI_DIGITS.substring(1007, 1010)}`);
     console.log("Console Command available: debugWin()");
@@ -300,7 +308,6 @@
     let currentRow = null;
     let currentGroup = null;
 
-    // Load PB
     let personalBest = localStorage.getItem('pi-stream-pb') || 0;
     document.getElementById('best').textContent = personalBest;
 
@@ -336,7 +343,6 @@
             }
 
             var particleCount = 50 * (timeLeft / duration);
-            // since particles fall down, start a bit higher than random
             confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
             confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
         }, 250);
@@ -361,7 +367,6 @@
     function createNewGroup() {
         if (!currentRow) createNewRow(true); 
         
-        // Remove active class from previous group
         if (currentGroup) currentGroup.classList.remove('active-chunk');
         
         const group = document.createElement('div');
@@ -373,30 +378,20 @@
     function handleInput(num) {
         if (gameOver) return;
 
-        // --- LAYOUT LOGIC ---
-        // Pre-calculation logic happens in resetGame for index 0.
-        // We only handle transitions here.
-
-        // Transition from Line 1 (10 digits) to Line 2
         if (currentIndex === 10) {
             createNewRow(false);
             createNewGroup();
         }
-        
-        // Subsequent lines
         else if (currentIndex > 10) {
             const relIndex = currentIndex - 10;
-            // New Row every 18 digits (starting line 3)
             if (relIndex > 0 && relIndex % 18 === 0) {
                 createNewRow(false);
             }
-            // New Group every 6 digits
             if (relIndex > 0 && relIndex % 6 === 0) {
                 createNewGroup();
             }
         }
 
-        // --- GAMEPLAY LOGIC ---
         const viewport = document.getElementById('viewport');
 
         if (num === PI_DIGITS[currentIndex]) {
@@ -445,7 +440,6 @@
 
         document.getElementById('final-score').textContent = currentIndex + (won ? " (MAX!)" : "");
         document.getElementById('game-over-modal').style.display = 'flex';
-        // Ensure scrolled to bottom to see error
         document.getElementById('viewport').scrollTop = document.getElementById('viewport').scrollHeight;
     }
 
@@ -467,16 +461,13 @@
         document.getElementById('pi-rows-container').innerHTML = ''; 
         document.getElementById('game-over-modal').style.display = 'none';
         
-        // Initialize Layout Immediately
-        createNewRow(true); // Row 1 (holds 3. prefix)
-        createNewGroup();   // Group 1 (holds first 10 digits)
+        createNewRow(true); 
+        createNewGroup();   
     }
     
     // DEBUG COMMAND
     window.debugWin = function() {
         if(gameOver) resetGame();
-        // Use a fast loop to simulate typing without freezing UI too much
-        // but fast enough to be "instant"
         let i = currentIndex;
         function fastType() {
             const batchSize = 50; 

@@ -13,6 +13,7 @@
             --gold: #ffd700;
             --mid-grey: #6c757d;
             --text-light: #e0e0e0;
+            --danger-red: #ff3333;
         }
 
         body {
@@ -26,6 +27,45 @@
             min-height: 100vh;
             margin: 0;
             overflow: hidden;
+            transition: background-color 1s ease;
+        }
+
+        /* High Stakes Mode (Active at 900+) */
+        body.high-stakes {
+            background-color: #000000;
+        }
+        
+        body.high-stakes .container {
+            border-color: var(--danger-red);
+            box-shadow: 0 0 40px rgba(255, 51, 51, 0.4);
+        }
+
+        /* Split Timers (Left Margin) */
+        #splits-container {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 80vh;
+            overflow-y: auto;
+            text-align: left;
+            opacity: 0.6;
+            width: 120px;
+            pointer-events: none;
+        }
+
+        .split-entry {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: var(--steel-blue);
+        }
+        
+        .split-entry span {
+            color: var(--text-light);
+            font-weight: bold;
         }
 
         .progress-wrapper {
@@ -36,8 +76,9 @@
             border: 1px solid var(--mid-grey);
             border-radius: 6px;
             margin-bottom: 15px;
-            overflow: hidden;
+            overflow: visible; /* Changed to visible for marker glow */
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
         }
 
         .progress-fill {
@@ -46,6 +87,20 @@
             background: var(--gold);
             box-shadow: 0 0 15px var(--gold);
             transition: width 0.1s linear;
+            border-radius: 6px;
+        }
+
+        /* Best Score Marker */
+        #best-marker {
+            position: absolute;
+            top: -4px;
+            bottom: -4px;
+            width: 3px;
+            background-color: white;
+            box-shadow: 0 0 8px white, 0 0 15px white;
+            z-index: 10;
+            display: none; /* Hidden until fail */
+            transition: left 0.3s ease;
         }
 
         .container {
@@ -57,6 +112,7 @@
             max-width: 1050px; 
             text-align: center;
             border: 1px solid var(--mid-grey);
+            transition: border 0.5s ease, box-shadow 0.5s ease;
         }
 
         .header-area {
@@ -99,7 +155,6 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            /* Removed left padding to allow true centering */
             padding-left: 0; 
             width: 100%;
         }
@@ -111,15 +166,13 @@
             position: relative;
             min-height: 46px; 
             width: 100%;
-            /* Default alignment for normal rows: stick to left with some margin */
             padding-left: 20px; 
             box-sizing: border-box;
         }
 
-        /* Specific style for centering ONLY the first row */
         .pi-row.centered-row {
             justify-content: center;
-            padding-left: 0; /* Remove padding for true center */
+            padding-left: 0;
         }
 
         .pi-group {
@@ -140,7 +193,6 @@
             box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
         }
 
-        /* FIX: Hide the yellow blob if the group has no digits yet */
         .pi-group.active-chunk:empty {
             border-color: transparent;
             background: transparent;
@@ -251,8 +303,11 @@
 </head>
 <body>
 
+<div id="splits-container"></div>
+
 <div class="progress-wrapper">
     <div class="progress-fill" id="progress-bar"></div>
+    <div id="best-marker"></div>
 </div>
 
 <div class="container">
@@ -314,13 +369,16 @@
     
     // DEBUG LOG
     console.log(`Target: ${TARGET}`);
-    console.log(`End Sequence (1007-1010): ...${PI_DIGITS.substring(1007, 1010)}`);
     console.log("Console Command available: debugWin()");
 
     let currentIndex = 0;
     let gameOver = false;
     let currentRow = null;
     let currentGroup = null;
+
+    // --- TIMING VARIABLES ---
+    let startTime = null;
+    let timerRunning = false;
 
     let personalBest = localStorage.getItem('pi-stream-pb') || 0;
     document.getElementById('best').textContent = personalBest;
@@ -390,8 +448,29 @@
         currentGroup = group;
     }
 
+    function formatTime(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function updateBestMarker() {
+        if (personalBest > 0) {
+            const pct = Math.min((personalBest / TARGET) * 100, 100);
+            const marker = document.getElementById('best-marker');
+            marker.style.left = pct + '%';
+        }
+    }
+
     function handleInput(num) {
         if (gameOver) return;
+
+        // START TIMER ON FIRST DIGIT
+        if (currentIndex === 0 && !timerRunning) {
+            startTime = Date.now();
+            timerRunning = true;
+        }
 
         // --- LAYOUT LOGIC ---
         if (currentIndex === 10) {
@@ -410,6 +489,7 @@
         const viewport = document.getElementById('viewport');
 
         if (num === PI_DIGITS[currentIndex]) {
+            // CORRECT
             const span = document.createElement('span');
             span.className = 'digit';
             span.textContent = num;
@@ -420,17 +500,35 @@
             
             const progressPercent = (currentIndex / TARGET) * 100;
             document.getElementById('progress-bar').style.width = Math.min(progressPercent, 100) + '%';
+
+            // --- HIGH STAKES MODE (900+) ---
+            if (currentIndex === 900) {
+                document.body.classList.add('high-stakes');
+            }
+
+            // --- SPLIT TIMERS (Every 100) ---
+            if (currentIndex > 0 && currentIndex % 100 === 0) {
+                const elapsed = Date.now() - startTime;
+                const splitDiv = document.createElement('div');
+                splitDiv.className = 'split-entry';
+                splitDiv.innerHTML = `${currentIndex}: <span>${formatTime(elapsed)}</span>`;
+                document.getElementById('splits-container').appendChild(splitDiv);
+            }
             
             viewport.scrollTop = viewport.scrollHeight;
             
             if (currentIndex === TARGET) endGame(true);
+
         } else {
+            // WRONG (Immediate Fail)
             endGame(false, num);
         }
     }
 
     function endGame(won, numInput) {
         gameOver = true;
+        timerRunning = false;
+
         if (!won) {
             playWrongSound();
             const span = document.createElement('span');
@@ -439,6 +537,12 @@
             currentGroup.appendChild(span);
             document.getElementById('modal-title').textContent = "CHALLENGE OVER";
             document.getElementById('modal-title').style.color = "#d32f2f";
+
+            // SHOW BEST MARKER (Hidden until first fail)
+            const marker = document.getElementById('best-marker');
+            marker.style.display = 'block';
+            updateBestMarker();
+
         } else {
             document.getElementById('modal-title').textContent = "1010 DIGITS!";
             document.getElementById('modal-title').style.color = "var(--gold)";
@@ -449,6 +553,8 @@
             personalBest = currentIndex;
             localStorage.setItem('pi-stream-pb', personalBest);
             document.getElementById('best').textContent = personalBest;
+            // Update marker position immediately if we set a new PB
+            updateBestMarker();
         }
 
         document.getElementById('final-score').textContent = currentIndex + (won ? " (MAX!)" : "");
@@ -467,8 +573,17 @@
     function resetGame() {
         currentIndex = 0;
         gameOver = false;
+        timerRunning = false;
+        startTime = null;
         currentRow = null;
         currentGroup = null;
+
+        // Reset High Stakes
+        document.body.classList.remove('high-stakes');
+        
+        // Reset Splits
+        document.getElementById('splits-container').innerHTML = '';
+
         document.getElementById('score').textContent = '0';
         document.getElementById('progress-bar').style.width = '0%';
         document.getElementById('pi-rows-container').innerHTML = ''; 
@@ -483,14 +598,23 @@
     window.debugWin = function() {
         if(gameOver) resetGame();
         let i = currentIndex;
+
+        // Force start time if not started, so splits have timestamps
+        if(!timerRunning) {
+            startTime = Date.now();
+            timerRunning = true;
+        }
+
         function fastType() {
             const batchSize = 50; 
+            const stopAt = 1007; // STOPS HERE for dramatic finish
+
             for(let k=0; k<batchSize; k++) {
-                if (i >= 1010) return;
+                if (i >= stopAt) return;
                 handleInput(PI_DIGITS[i]);
                 i++;
             }
-            if (i < 1010 && !gameOver) requestAnimationFrame(fastType);
+            if (i < stopAt && !gameOver) requestAnimationFrame(fastType);
         }
         fastType();
     };

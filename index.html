@@ -14,6 +14,7 @@
             --mid-grey: #6c757d;
             --text-light: #e0e0e0;
             --danger-red: #ff3333;
+            --neon-green: #00e676;
         }
 
         body {
@@ -229,7 +230,7 @@
         .digit.decimal { background: var(--mid-grey); color: var(--deep-charcoal); }
 
         .digit.wrong {
-            background: #d32f2f; /* RED BACKGROUND FOR WRONG DIGIT */
+            background: #d32f2f;
             animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
             box-shadow: 0 0 15px #ff3333;
             z-index: 10;
@@ -252,7 +253,7 @@
             font-size: 1.6rem;
             font-weight: bold;
             cursor: pointer;
-            transition: 0.15s;
+            transition: background 0.1s, transform 0.05s;
         }
 
         button:hover { 
@@ -262,6 +263,15 @@
         }
 
         button:active { transform: translateY(2px); }
+
+        /* KEYBOARD PRESS HIGHLIGHT CLASS */
+        button.active-key {
+            background: var(--neon-green) !important;
+            color: var(--deep-charcoal) !important;
+            border-color: white !important;
+            box-shadow: 0 0 20px rgba(0, 230, 118, 0.6);
+            transform: scale(0.95) !important;
+        }
 
         .modal {
             position: fixed;
@@ -295,7 +305,7 @@
         }
         .btn-review:hover { background: rgba(255,255,255,0.1); border-color: white; }
 
-        /* Restart Button on Main Screen (Hidden by default) */
+        /* Restart Button on Main Screen (initially hidden) */
         #main-restart-btn {
             display: none;
             max-width: 400px;
@@ -330,16 +340,16 @@
     </div>
 
     <div class="numpad" id="numpad">
-        <button onclick="handleInput('1')">1</button>
-        <button onclick="handleInput('2')">2</button>
-        <button onclick="handleInput('3')">3</button>
-        <button onclick="handleInput('4')">4</button>
-        <button onclick="handleInput('5')">5</button>
-        <button onclick="handleInput('6')">6</button>
-        <button onclick="handleInput('7')">7</button>
-        <button onclick="handleInput('8')">8</button>
-        <button onclick="handleInput('9')">9</button>
-        <button onclick="handleInput('0')">0</button>
+        <button id="btn-1" onclick="handleInput('1')">1</button>
+        <button id="btn-2" onclick="handleInput('2')">2</button>
+        <button id="btn-3" onclick="handleInput('3')">3</button>
+        <button id="btn-4" onclick="handleInput('4')">4</button>
+        <button id="btn-5" onclick="handleInput('5')">5</button>
+        <button id="btn-6" onclick="handleInput('6')">6</button>
+        <button id="btn-7" onclick="handleInput('7')">7</button>
+        <button id="btn-8" onclick="handleInput('8')">8</button>
+        <button id="btn-9" onclick="handleInput('9')">9</button>
+        <button id="btn-0" onclick="handleInput('0')">0</button>
     </div>
 
     <button id="main-restart-btn" class="btn-restart" onclick="resetGame()">RETRY CHALLENGE</button>
@@ -474,8 +484,21 @@
         }
     }
 
+    function highlightKey(num) {
+        const btn = document.getElementById('btn-' + num);
+        if (btn) {
+            btn.classList.add('active-key');
+            setTimeout(() => {
+                btn.classList.remove('active-key');
+            }, 100);
+        }
+    }
+
     function handleInput(num) {
         if (gameOver) return;
+
+        // VISUAL FEEDBACK (Mouse or Keyboard)
+        highlightKey(num);
 
         // START TIMER ON FIRST DIGIT
         if (currentIndex === 0 && !timerRunning) {
@@ -543,7 +566,7 @@
         if (!won) {
             playWrongSound();
             const span = document.createElement('span');
-            span.className = 'digit wrong'; // THIS CLASS MAKES IT RED
+            span.className = 'digit wrong';
             span.textContent = numInput;
             currentGroup.appendChild(span);
             document.getElementById('modal-title').textContent = "CHALLENGE OVER";
@@ -573,13 +596,10 @@
     }
 
     function closeModal() {
-        // HIDE MODAL
         document.getElementById('game-over-modal').style.display = 'none';
         
-        // SWITCH TO REVIEW MODE
-        // Hide Numpad
+        // Hide Numpad, Show Retry Button
         document.getElementById('numpad').style.display = 'none';
-        // Show Retry Button
         document.getElementById('main-restart-btn').style.display = 'block';
     }
 
@@ -606,7 +626,7 @@
         document.getElementById('pi-rows-container').innerHTML = ''; 
         document.getElementById('game-over-modal').style.display = 'none';
 
-        // RESTORE GAME UI
+        // Restore UI
         document.getElementById('numpad').style.display = 'grid';
         document.getElementById('main-restart-btn').style.display = 'none';
         

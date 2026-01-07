@@ -14,7 +14,6 @@
             --mid-grey: #6c757d;
             --text-light: #e0e0e0;
             --danger-red: #ff3333;
-            --neon-green: #00e676;
         }
 
         body {
@@ -253,7 +252,7 @@
             font-size: 1.6rem;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.1s, transform 0.05s;
+            transition: 0.15s;
         }
 
         button:hover { 
@@ -264,13 +263,11 @@
 
         button:active { transform: translateY(2px); }
 
-        /* KEYBOARD PRESS HIGHLIGHT CLASS */
-        button.active-key {
-            background: var(--neon-green) !important;
-            color: var(--deep-charcoal) !important;
-            border-color: white !important;
-            box-shadow: 0 0 20px rgba(0, 230, 118, 0.6);
-            transform: scale(0.95) !important;
+        /* Class for keyboard interaction lighting up */
+        button.btn-active {
+            background: var(--steel-blue);
+            border-color: white;
+            transform: translateY(2px) scale(1.05);
         }
 
         .modal {
@@ -305,7 +302,6 @@
         }
         .btn-review:hover { background: rgba(255,255,255,0.1); border-color: white; }
 
-        /* Restart Button on Main Screen (initially hidden) */
         #main-restart-btn {
             display: none;
             max-width: 400px;
@@ -388,7 +384,6 @@
     const PI_DIGITS = generatePi(1200);
     const TARGET = 1010;
     
-    // DEBUG LOG
     console.log(`Target: ${TARGET}`);
     console.log("Console Command available: debugWin()");
 
@@ -397,7 +392,6 @@
     let currentRow = null;
     let currentGroup = null;
 
-    // --- TIMING VARIABLES ---
     let startTime = null;
     let timerRunning = false;
 
@@ -447,7 +441,7 @@
         row.className = 'pi-row';
         
         if (isFirstRow) {
-            row.classList.add('centered-row'); // Center only the first row
+            row.classList.add('centered-row'); 
             const prefix = document.createElement('div');
             prefix.className = 'row-prefix';
             prefix.innerHTML = '<span class="digit decimal">3</span><span class="digit decimal">.</span>';
@@ -484,21 +478,8 @@
         }
     }
 
-    function highlightKey(num) {
-        const btn = document.getElementById('btn-' + num);
-        if (btn) {
-            btn.classList.add('active-key');
-            setTimeout(() => {
-                btn.classList.remove('active-key');
-            }, 100);
-        }
-    }
-
     function handleInput(num) {
         if (gameOver) return;
-
-        // VISUAL FEEDBACK (Mouse or Keyboard)
-        highlightKey(num);
 
         // START TIMER ON FIRST DIGIT
         if (currentIndex === 0 && !timerRunning) {
@@ -572,7 +553,6 @@
             document.getElementById('modal-title').textContent = "CHALLENGE OVER";
             document.getElementById('modal-title').style.color = "#d32f2f";
 
-            // SHOW BEST MARKER (Hidden until first fail)
             const marker = document.getElementById('best-marker');
             marker.style.display = 'block';
             updateBestMarker();
@@ -597,14 +577,22 @@
 
     function closeModal() {
         document.getElementById('game-over-modal').style.display = 'none';
-        
-        // Hide Numpad, Show Retry Button
         document.getElementById('numpad').style.display = 'none';
         document.getElementById('main-restart-btn').style.display = 'block';
     }
 
     document.addEventListener('keydown', (e) => {
-        if (e.key >= '0' && e.key <= '9') handleInput(e.key);
+        if (e.key >= '0' && e.key <= '9') {
+            // 1. Process Logic
+            handleInput(e.key);
+            
+            // 2. Light Up Keypad (Visual Only)
+            const btn = document.getElementById('btn-' + e.key);
+            if(btn) {
+                btn.classList.add('btn-active');
+                setTimeout(() => btn.classList.remove('btn-active'), 100);
+            }
+        }
     });
 
     function resetGame() {
@@ -615,10 +603,7 @@
         currentRow = null;
         currentGroup = null;
 
-        // Reset High Stakes
         document.body.classList.remove('high-stakes');
-        
-        // Reset Splits
         document.getElementById('splits-container').innerHTML = '';
 
         document.getElementById('score').textContent = '0';
@@ -626,11 +611,9 @@
         document.getElementById('pi-rows-container').innerHTML = ''; 
         document.getElementById('game-over-modal').style.display = 'none';
 
-        // Restore UI
         document.getElementById('numpad').style.display = 'grid';
         document.getElementById('main-restart-btn').style.display = 'none';
         
-        // Initialize Layout Immediately
         createNewRow(true); 
         createNewGroup();
     }
